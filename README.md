@@ -27,3 +27,7 @@ This code requries the R package `lubridate`.
 ## Amphotericin B  treatment success 2008–2017
 
 R code for the analysis of the amphotericin B treatment success data (described in the second manuscript) can be found in the file `treatment-success.r`.
+
+### Requirements
+
+This code requires the R package `survival`.
