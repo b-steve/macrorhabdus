@@ -1,0 +1,37 @@
+Patient ID,Patient Breed,Dose,Success No - died / euthanased / remained positive. Yes - treated and negative for MO,Followup time (days),Outcome,Survival Time,Followup
+42111,Galah,50,No,1,Died,1,
+59623,Budgerigar,25,No,1,Died,1,
+44489,Cockatiel,25,No,1,Died,1,
+51744,Lovebird - Peachface,25,No,1,Died,1,
+32195,Budgerigar,25,No,11,Died,11,
+34190,Budgerigar,25,No,16,Died,16,
+32371,Budgerigar,50,No,2,Died,2,
+31052,Lovebird,25,No,23,Died,23,
+33302,Budgerigar,25,No,30,Died,30,
+74264,Lovebird - Peachface,25,No,36,Died,36,
+47403,Budgie,25,No,4,Died,4,
+52672,Cockatiel,25,No,53,Died,53,
+75947,Parrot - King,25,No,6,Died,6,
+73824,Budgerigar,100,No,88,Died,88,
+33204,Budgerigar,25,No,11,Died,11,
+47403,Budgerigar,25,No,4,Died,4,
+44572,Budgerigar,25,No,4,Died,4,
+80332,Budgerigar,100,No,72,Died,72,
+80681,Budgerigar,100,No,14,Died,14,
+50807,Budgerigar,25,No,17,Died,17,
+32750,Budgerigar,25,No,67,Died,67,
+81527,Cockatoo - Galah,100,No,20,Died,20,
+57612,Budgerigar,25,Yes,21,Fixed,,21
+48646,Budgerigar,25,Yes,20,Fixed,,780
+31826,Cockatiel,25,Yes,18,Fixed,,18
+43074,Lovebird,25,Yes,14,Fixed,,14
+79776,Budgerigar,100,Yes,30,Fixed,,30
+47955,Love Bird - Masked,Water,Yes,20,Fixed,,780
+31146,Budgerigar,25,No,21,Not-fixed,,21
+50710,Lovebird,25,No,30,Not-fixed,,30
+51744,Lovebird (aviary),Water,No,30,Not-fixed,,30
+35735,Budgerigar,25,No,19,Not-fixed,,19
+49861,Princess parrot,Water,No,20,Not-fixed,,20
+35929,Budgerigar,25,No,16,Died,16,
+32014,Budgerigar,5,No,150,Not-fixed,,150
+33141,Budgerigar,25,No,250,Not-fixed,,250
