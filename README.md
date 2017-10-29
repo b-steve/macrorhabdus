@@ -20,6 +20,10 @@ This code requires the R package `TMB` and a C++ compiler to be installed.
 
 R code for the analysis of the lovebird and budgerigar screening data (described in the second manuscript) can be found in the file `screening.r`.
 
+### Requirements
+
+This code requries the R package `lubridate`.
+
 ## Amphotericin B  treatment success 2008–2017
 
 R code for the analysis of the amphotericin B treatment success data (described in the second manuscript) can be found in the file `treatment-success.r`.
