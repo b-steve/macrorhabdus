@@ -1,5 +1,5 @@
 ## Importing the data.
-chickens.df <- read.csv("chickens-all.csv")
+chickens.df <- read.csv("data/chickens.csv")
 colnames(chickens.df) <- c("group", "cage", "bird", "weight", "slide", "mo")
 
 ## Sorting out data.
@@ -26,11 +26,11 @@ weight.points <- seq(0.3, 0.6, length.out = 1000)
 library(TMB)
 ## Compiling and loading TMB DLLs.
 compile("tmb/chickens.cpp")
-dyn.load(dynlib("chickens"))
-compile("tmb/chickens-hold.cpp")
-dyn.load(dynlib("chickens-hold"))
+dyn.load(dynlib("tmb/chickens"))
+compile("tmb/chickens_hold.cpp")
+dyn.load(dynlib("tmb/chickens_hold"))
 
-## Data to pass to TMB.
+## Setting up model objects for TMB.
 
 ## Full model.
 f.full <- MakeADFun(data = list(n = n,
@@ -164,7 +164,7 @@ fit.hold_ntc.25 <- nlminb(f.hold_ntc.25$par, f.hold_ntc.25$fn, f.hold_ntc.25$gr)
 fit.hold_ntc.100 <- nlminb(f.hold_ntc.100$par, f.hold_ntc.100$fn, f.hold_ntc.100$gr)
 fit.hold_25.100 <- nlminb(f.hold_25.100$par, f.hold_25.100$fn, f.hold_25.100$gr)
 
-## AICs
+## AICs---full model preferred.
 2*length(fit.full$par) + 2*fit.full$objective
 2*length(fit.no_weight2$par) + 2*fit.no_weight2$objective
 2*length(fit.no_weight$par) + 2*fit.no_weight$objective
@@ -179,7 +179,7 @@ loglik.hold_ntc.25 <- -fit.hold_ntc.25$objective
 loglik.hold_ntc.100 <- -fit.hold_ntc.100$objective
 loglik.hold_25.100 <- -fit.hold_25.100$objective
 
-## Likelihood-ratio tests:
+## Likelihood-ratio tests with p-values:
 ## H0: No weight effect at all.
 lrts <- 2*(loglik.full - loglik.no_weight)
 1 - pchisq(lrts, 2)
@@ -198,6 +198,9 @@ lrts <- 2*(loglik.full - loglik.hold_ntc.100)
 ## H0: 25mg/kg = 100mg/kg.
 lrts <- 2*(loglik.full - loglik.hold_25.100)
 1 - pchisq(lrts, 1)
+
+## Getting full model SD report.
+rep.full <- sdreport(f.full)
 
 ## Getting fitted lines for the plot.
 summary(rep.full, c("fixed"))
@@ -263,6 +266,7 @@ fit.glmer.linear <- glmer(mo ~ group + weight + (1 | bird) + (1 | slide), family
 fit.glmer.quad <- glmer(mo ~ group + weight + I(weight^2) + (1 | bird) + (1 | slide), family = "poisson")
 
 ## Comparing weights of infected and uninfected chickens.
+chickens_ind.df <- read.csv("data/chickens-ind.csv")
 chickens_ind.df <- within(chickens_ind.df, {infected <- ifelse(group == "PC", "no", "yes")})
 weight <- chickens_ind.df$weight
 infected <- chickens_ind.df$infected
