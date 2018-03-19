@@ -1,10 +1,8 @@
 # Analysis of *Macrorhabdus ornithogaster* treatment data
 
-This repository contains data and code for the statistical analyses found in the following two manuscripts:
+This repository contains data and code for the statistical analyses found in the following manuscript:
 
-* Baron, H. R., Leung, C. L., Stevenson, B. C., Gonzalez, M. S., and Phalen, D. N. Treatment trials with amphotericin B for the treatment of *Macrorhabdus ornithogaster in experimentally infected white leghorn chickens (*Gallus gallus domesticus*).
-
-* Baron, H. R., Leung, C. L., Stevenson, B. C., Gonzalez, M. S., and Phalen, D. N. Long-term monitoring of faecal shedding of *Macrorhabdus ornithogaster* following treatment with amphotericin B and analysis of treatment success with amphotericin B against *Macrorhabdus ornithogaster* 2008–2017.
+* Baron, H. R., Leung, C. L., Stevenson, B. C., Gonzalez, M. S., and Phalen, D. N. Evidence of Amphotericin B resistance in *Macrorhabdus ornithogaster* in Australian cage-birds.
 
 All analyses require the free software environment [R](https://www.r-project.org/).
 
