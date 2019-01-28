@@ -37,8 +37,8 @@ n.infected.chickens.fu <- length(infected.chickens.fu)
 load("s-infected.RData")
 test.cases <- s.infected.vec
 
-compile("mo.cpp")
-dyn.load(dynlib("mo"))
+compile("comparison.cpp")
+dyn.load(dynlib("comparison"))
 
 mo.data <- list(n_chickens = n.chickens,
                 times = times,
@@ -56,7 +56,7 @@ mo.data <- list(n_chickens = n.chickens,
                 emb = emb.df,
                 gs = gs.df,
                 infected_chickens = as.numeric(logical.infected.chickens.et),
-                test_cases = s.infected.vec)
+                test_cases = test.cases)
 mo.parameters <-  list(beta_0_base = log(50),
                        beta_0_diff = rep(0, 4),
                        beta_1_base = 1,
@@ -83,7 +83,7 @@ mo.obj <- MakeADFun(data = mo.data,
                                ##log_theta_diff = factor(rep(NA, 4))
                                ##log_rho_s = factor(NA)
                                ),
-                    random = c("s", "u_1", "u_2"), DLL = "mo")
+                    random = c("s", "u_1", "u_2"), DLL = "comparison")
 
 mo.fit <- nlminb(mo.obj$par, mo.obj$fn, mo.obj$gr)
 ## AIC (remember objective is already the NLL). 1740.224 is current best model.
@@ -126,18 +126,17 @@ if (mo.data$cov_function == 1){
     cov <- sigma.s^2*exp(-(seq(0, 35, by = 0.1)^2)/sigma.s^2) 
 }
 plot(seq(0, 35, by = 0.1), cov, ylim = c(0, max(cov)), type = "l")
-lines(seq(0, 35, by = 0.1), cov, ylim = c(0, max(cov)), col = "red")
 
 ## Plot of s for ith chicken.
-pdf(height = 4, width = 6, file = "chicken-sickness.pdf")
-par(mar = c(4, 4, 0, 0), oma = rep(0.1, 4), yaxs = "i")
+#pdf(height = 4, width = 6, file = "chicken-sickness.pdf")
+par(mar = c(4, 4, 0, 0), oma = rep(0.1, 4))
 plot(all.times, s[1, ],  ylim = range(s), type = "n", ylab = "Chicken sickness",
      xlab = "Days since first treatment")
 cols <- c("blue", "red")
 for (i in 1:n.chickens){
     lines(all.times, s[i, ], col = cols[logical.infected.chickens.et[i] + 1])
 }
-dev.off()
+#dev.off()
 
 ## Estimating probabilities of nonzero counts for infected chickens
 ## post-treatment and at follow-up.
@@ -165,15 +164,14 @@ colnames(p.zero) <- colnames(p.zero.lower) <- colnames(p.zero.upper) <-
   methods
 rownames(p.zero) <- rownames(p.zero.lower) <- rownames(p.zero.upper) <-
     rep(infected.chickens.fu, 2)
+## Probability of detecting infection.
 p.nonzero <- 1 - p.zero
+## Lower- and upper-limits for confidence intervals.
 p.nonzero.lower <- 1 - p.zero.upper
 p.nonzero.upper <- 1 - p.zero.lower
 
-p.nonzero
-## Hrmmm no sig diffs between treatments for each sickness level.
-
-## Making a big plot!
-pdf(width = 8, height = 12, file = "big-plot.pdf")
+## Plotting the confidence intervals.
+#pdf(width = 8, height = 12, file = "ci-plot.pdf")
 par(mar = c(4, 4, 0, 0), oma = rep(0.1, 4), yaxs = "i")
 plot.new()
 bird.spacing <- 20
@@ -208,4 +206,4 @@ axis(2, rep(bird.y.pos, each = 2) + rep(c(-1, 1)*time.spacing/2, n.infected.chic
 title(xlab = "Probability of detecting an MO organism")
 legend("topleft", rev(methods), lty = rep(1, n.methods), pch = 16, col = rev(cols.fu), bty = "n",
        bg = "white", cex = 0.8)
-dev.off()
+#dev.off()
