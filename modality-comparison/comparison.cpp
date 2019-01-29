@@ -56,6 +56,13 @@ Type objective_function<Type>::operator() ()
     betas_1(i) = beta_1_base + beta_1_diff(i - 1);
     thetas(i) = exp(log_theta_base + log_theta_diff(i - 1));
   }
+  // Constructing some comparisons between treatments.
+  matrix<Type> beta_0_comparison(5, 5);
+  for (int i = 0; i < 5; i++){
+    for (int j = 0; j < 5; j++){
+      beta_0_comparison(i, j) = betas_0(i) - betas_0(j);
+    }
+  }
   // Back-transforming some other parameters.
   Type sigma_s = exp(log_sigma_s);
   Type rho_s = exp(log_rho_s);
@@ -74,16 +81,16 @@ Type objective_function<Type>::operator() ()
   for (int i = 0; i < n_chickens; i++){
     for (int j = 0; j < n_all_times; j++){
     if (time_relationship == 1){
-      // This doesn't account for different treatment lengths, so
-      // throws an error for now.
+      // Linear.
       mu_s(i, j) = alpha_1*all_times(j);
-      exit(1111);
     } else if (time_relationship == 2){
+      // Quadratic.
       // This doesn't account for different treatment lengths, so
       // throws an error for now.
       mu_s(i, j) = alpha_1*all_times(j) + alpha_2*pow(all_times(j), 2);
       exit(2222);
     } else if (time_relationship == 3){
+      // Piecewise exponential.
       use_end_treatment = end_treatment(1 - infected_chickens(i));
 	if (all_times(j) > use_end_treatment){
 	  mu_s(i, j) = (alpha_1 + u_1(i))*use_end_treatment + (alpha_2 + u_2(i))*(all_times(j) - use_end_treatment);
@@ -160,12 +167,25 @@ Type objective_function<Type>::operator() ()
     ljd += dnorm(u_1(i), dummy_zero, sigma_u1, 1);
     ljd += dnorm(u_2(i), dummy_zero, sigma_u2, 1);
   }
+  // Comparing p_zero within rows.
+  vector<Type> p_zero_comparison(25*n_test_cases);
+  int p_zero_index = 0;
+  for (int i = 0; i < n_test_cases; i++){
+    for (int j = 0; j < 5; j++){
+      for (int k = 0; k < 5; k++){
+	p_zero_comparison(p_zero_index) = logit_p_zero(i, j) - logit_p_zero(i, k);
+	p_zero_index++;
+      }
+    }
+  }
   // ADREPORTS.
   ADREPORT(thetas);
   ADREPORT(sigma_s);
   ADREPORT(rho_s);
   ADREPORT(mu_s);
   ADREPORT(logit_p_zero);
+  ADREPORT(beta_0_comparison);
+  ADREPORT(p_zero_comparison);
   std::cout << "LJD: " << ljd << std::endl;
   ljd *= -1;
   return ljd;
