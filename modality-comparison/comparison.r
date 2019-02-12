@@ -11,7 +11,7 @@ all.times <- seq(0, 34, by = 0.5)
 n.all.times <- length(all.times)
 time.indices <- which(all.times %in% times) - 1
 end.treatment <- c(20, 10)
-n.chickens <- nrow(dwm.df)
+n.birds <- nrow(dwm.df)
 n.times <- length(times)
 n.measurements <- c(rep(7, 6), rep(6, 2), rep(7, 8))
 dwm.df[is.na(dwm.df)] <- 9999
@@ -23,15 +23,15 @@ gs.df[is.na(gs.df)] <- 9999
 ## Figuring out which animals were still infected at the end of treatment.
 check <- 6
 all.df <- cbind(dwm.df[, check], ef.df[, check], egs.df[, check], emb.df[, check], gs.df[, check])
-logical.infected.chickens.et <- apply(all.df, 1, function(x) any(x > 0 & x < 9999))
-infected.chickens.et <- which(logical.infected.chickens.et)
-n.infected.chickens.et <- length(infected.chickens.et)
+logical.infected.birds.et <- apply(all.df, 1, function(x) any(x > 0 & x < 9999))
+infected.birds.et <- which(logical.infected.birds.et)
+n.infected.birds.et <- length(infected.birds.et)
 
 ## Figuring out which animals were still infected at follow-up.
 check <- 7
 all.df <- cbind(dwm.df[, check], ef.df[, check], egs.df[, check], emb.df[, check], gs.df[, check])
-infected.chickens.fu <- which(apply(all.df, 1, function(x) any(x > 0 & x < 9999)))
-n.infected.chickens.fu <- length(infected.chickens.fu)
+infected.birds.fu <- which(apply(all.df, 1, function(x) any(x > 0 & x < 9999)))
+n.infected.birds.fu <- length(infected.birds.fu)
 
 ## Loading estimated sickness levels from infected birds.
 load("s-infected.RData")
@@ -41,7 +41,7 @@ n.test.cases <- length(test.cases)
 compile("comparison.cpp")
 dyn.load(dynlib("comparison"))
 
-mo.data <- list(n_chickens = n.chickens,
+mo.data <- list(n_birds = n.birds,
                 times = times,
                 all_times = all.times,
                 time_indices = time.indices,
@@ -56,7 +56,7 @@ mo.data <- list(n_chickens = n.chickens,
                 egs = egs.df,
                 emb = emb.df,
                 gs = gs.df,
-                infected_chickens = as.numeric(logical.infected.chickens.et),
+                infected_birds = as.numeric(logical.infected.birds.et),
                 test_cases = test.cases)
 mo.parameters <-  list(beta_0_base = log(50),
                        beta_0_diff = rep(0, 4),
@@ -70,8 +70,8 @@ mo.parameters <-  list(beta_0_base = log(50),
                        log_rho_s = log(1),
                        log_sigma_u1 = log(1),
                        log_sigma_u2 = log(1),
-                       s = matrix(1, nrow = n.chickens, ncol = n.all.times),
-                       u_1 = rep(1, n.chickens), u_2 = rep(1, n.chickens))
+                       s = matrix(1, nrow = n.birds, ncol = n.all.times),
+                       u_1 = rep(1, n.birds), u_2 = rep(1, n.birds))
 
 ## Object for full model.
 mo.obj <- MakeADFun(data = mo.data,
@@ -165,10 +165,10 @@ summary(mo.rep, "random")
 ## Collecting random effects.
 s <- matrix(summary(mo.rep, "random")[rownames(summary(mo.rep, "random")) == "s", ][, 1], nrow = 16)
 ## Collecting mean of random effects.
-mu.s <- matrix(summary(mo.rep, "report")[rownames(summary(mo.rep, "report")) == "mu_s", 1], nrow = n.chickens)
+mu.s <- matrix(summary(mo.rep, "report")[rownames(summary(mo.rep, "report")) == "mu_s", 1], nrow = n.birds)
 ## Collecting lambda.y for dwm.
 lambda.y.rep <- matrix(summary(mo.rep, "report")[rownames(summary(mo.rep, "report")) == "lambda_y_mat", 1],
-                       nrow = n.chickens, ncol = max(n.measurements))
+                       nrow = n.birds, ncol = max(n.measurements))
 ## Collecting beta0 comparisons.
 beta.0.comparisons.ests <- summary(mo.rep, "report")[rownames(summary(mo.rep, "report")) ==
                                                 "beta_0_comparison", 1]
@@ -206,9 +206,9 @@ for (i in 1:n.test.cases){
 sig.ps <- lapply(p.zero.comparisons.p.mat, function(x) which(x < 0.05, arr.ind = TRUE))
 lapply(sig.ps, function(x) sum(x[, 2] == 4))
 
-## Plotting mu.s for each chicken.
+## Plotting mu.s for each bird.
 plot(all.times, mu.s[1, ], type = "l", ylim = range(mu.s))
-for (i in 1:n.chickens){
+for (i in 1:n.birds){
     lines(all.times, mu.s[i, ])
 }
 
@@ -223,26 +223,26 @@ if (mo.data$cov_function == 1){
 }
 plot(seq(0, 35, by = 0.1), cov, ylim = c(0, max(cov)), type = "l")
 
-## Plot of s for ith chicken.
-#pdf(height = 4, width = 6, file = "chicken-sickness.pdf")
-par(mar = c(4, 4, 0, 0), oma = rep(0.1, 4))
+## Plot of bird sicknesses.
+pdf(height = 4, width = 6, file = "bird-sickness.pdf")
+par(mar = c(4, 4, 0, 0), oma = rep(0.1, 4), xaxs = "i")
 cols <- brewer.pal(3, "Set1")[c(2, 3)]
-plot(all.times, s[1, ],  ylim = range(s), type = "n", ylab = "Chicken sickness",
+plot(all.times, s[1, ],  ylim = range(s), type = "n", ylab = "Bird sickness",
      xlab = "Days since first treatment")
-for (i in 1:n.chickens){
-    lines(all.times, s[i, ], col = cols[logical.infected.chickens.et[i] + 1])
+for (i in 1:n.birds){
+    lines(all.times, s[i, ], col = cols[logical.infected.birds.et[i] + 1])
 }
 abline(v = c(10, 20), lty = "dotted")
-legend("bottomleft", c("Ten-day treatment", "Twenty-day treatment"), lty = rep(1, 2),
+legend("topright", c("Ten-day treatment", "Twenty-day treatment"), lty = rep(1, 2),
        col = cols, bty = "n", cex = 0.8)
-#dev.off()
+dev.off()
 
-## Estimating probabilities of nonzero counts for infected chickens
+## Estimating probabilities of nonzero counts for infected birds
 ## post-treatment and at follow-up.
 
-## Collecting estimated sickness values for infected chickens for the
+## Collecting estimated sickness values for infected birds for the
 ## last two tests.
-s.infected <- s[infected.chickens.fu, time.indices[6:7] + 1]
+s.infected <- s[infected.birds.fu, time.indices[6:7] + 1]
 s.infected.vec <- c(s.infected)
 save(s.infected.vec, file = "s-infected.RData")
 
@@ -254,15 +254,26 @@ logit.p.zero.se <- matrix(summary(mo.rep, "report")[rownames(summary(mo.rep, "re
 logit.p.zero.lower <- logit.p.zero - qnorm(0.975)*logit.p.zero.se
 logit.p.zero.upper <- logit.p.zero + qnorm(0.975)*logit.p.zero.se
 
+## Old and new method names.
+methods <- c("DWM", "EF", "EGS", "EMB", "GS")
+methods.new <- c("DWM", "MST", "MSGS", "MSMB", "GS")
+methods.order <- rev(order(methods.new))
+logit.p.zero <- logit.p.zero[, methods.order]
+logit.p.zero.se <- logit.p.zero.se[, methods.order]
+logit.p.zero.lower <- logit.p.zero.lower[, methods.order]
+logit.p.zero.upper <- logit.p.zero.upper[, methods.order]
+methods.new <- methods.new[methods.order]
+
+## Transforming to probability scale.
 p.zero <- plogis(logit.p.zero)
 p.zero.lower <- plogis(logit.p.zero.lower)
 p.zero.upper <- plogis(logit.p.zero.upper)
-methods <- c("DWM", "EF", "EGS", "EMB", "GS")
-n.methods <- length(methods)
+
+n.methods <- length(methods.new)
 colnames(p.zero) <- colnames(p.zero.lower) <- colnames(p.zero.upper) <-
-  methods
+  methods.new
 rownames(p.zero) <- rownames(p.zero.lower) <- rownames(p.zero.upper) <-
-    rep(infected.chickens.fu, 2)
+    rep(infected.birds.fu, 2)
 ## Probability of detecting infection.
 p.nonzero <- 1 - p.zero
 ## Lower- and upper-limits for confidence intervals.
@@ -270,42 +281,42 @@ p.nonzero.lower <- 1 - p.zero.upper
 p.nonzero.upper <- 1 - p.zero.lower
 
 ## Plotting the confidence intervals.
-#pdf(width = 8, height = 12, file = "ci-plot.pdf")
+pdf(width = 8, height = 12, file = "ci-plot.pdf")
 par(mar = c(4, 4, 0, 0), oma = rep(0.1, 4), yaxs = "i")
 plot.new()
 bird.spacing <- 20
 time.spacing <- 10
 method.spacing <- 1
-bird.y.pos <- bird.spacing*(1:n.infected.chickens.fu) - bird.spacing/2
+bird.y.pos <- bird.spacing*(1:n.infected.birds.fu) - bird.spacing/2
 plot.window(xlim = c(0, 1), ylim = c(0, max(bird.y.pos) + bird.spacing/2))
 cols <- brewer.pal(10, "Paired")
 cols.et <- cols[c(TRUE, FALSE)]
 cols.fu <- cols[c(FALSE, TRUE)]
 abline(v = 1, lty = "dotted")
-lines(rep(0, 2), y = c(0, bird.y.pos[n.infected.chickens.fu]), lty = "dotted")
-for (i in 1:n.infected.chickens.fu){
+lines(rep(0, 2), y = c(0, bird.y.pos[n.infected.birds.fu]), lty = "dotted")
+for (i in 1:n.infected.birds.fu){
     for (j in 1:2){
         for (k in 1:n.methods){
             y.val <- bird.y.pos[i] + c(-1, 1)[j]*time.spacing/2 + (k - 3)*method.spacing 
-            p <- p.nonzero[rownames(p.nonzero) == infected.chickens.fu[i], k][j]
-            p.lower <- p.nonzero.lower[rownames(p.nonzero) == infected.chickens.fu[i], k][j]
-            p.upper <- p.nonzero.upper[rownames(p.nonzero) == infected.chickens.fu[i], k][j]
+            p <- p.nonzero[rownames(p.nonzero) == infected.birds.fu[i], k][j]
+            p.lower <- p.nonzero.lower[rownames(p.nonzero) == infected.birds.fu[i], k][j]
+            p.upper <- p.nonzero.upper[rownames(p.nonzero) == infected.birds.fu[i], k][j]
             col <- c(cols.et[k], cols.fu[k])[j]
             points(p, y.val, pch = 16, col = col)
             lines(c(p.lower, p.upper), rep(y.val, 2), col = col)
         }
     }
 }
-abline(h = bird.y.pos[-n.infected.chickens.fu] + bird.spacing/2)
+abline(h = bird.y.pos[-n.infected.birds.fu] + bird.spacing/2)
 box()
 axis(1)
-axis(2, bird.y.pos, paste("Bird", infected.chickens.fu, "\n", "\n"), tick = FALSE)
-axis(2, rep(bird.y.pos, each = 2) + rep(c(-1, 1)*time.spacing/2, n.infected.chickens.fu),
-     rep(c("ET", "FU"), n.infected.chickens.fu), tick = FALSE)
+axis(2, bird.y.pos, paste("Bird", infected.birds.fu, "\n", "\n"), tick = FALSE)
+axis(2, rep(bird.y.pos, each = 2) + rep(c(-1, 1)*time.spacing/2, n.infected.birds.fu),
+     rep(c("ET", "FU"), n.infected.birds.fu), tick = FALSE)
 title(xlab = "Probability of detecting an MO organism")
-legend("topleft", rev(methods), lty = rep(1, n.methods), pch = 16, col = rev(cols.fu), bty = "n",
+legend("topleft", rev(methods.new), lty = rep(1, n.methods), pch = 16, col = rev(cols.fu), bty = "n",
        bg = "white", cex = 0.8)
-#dev.off()
+dev.off()
 
 ## Likelihood-ratio test for treatment effect.
 lrts.a1 <- 2*(mo.fit.a1.null$objective - mo.fit$objective)

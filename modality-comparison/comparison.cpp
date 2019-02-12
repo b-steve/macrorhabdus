@@ -16,7 +16,7 @@ template<class Type>
 Type objective_function<Type>::operator() ()
 {
   // Reading in data.
-  DATA_INTEGER(n_chickens);
+  DATA_INTEGER(n_birds);
   DATA_VECTOR(times);
   DATA_VECTOR(all_times);
   DATA_IVECTOR(time_indices);
@@ -29,7 +29,7 @@ Type objective_function<Type>::operator() ()
   DATA_MATRIX(egs);
   DATA_MATRIX(emb);
   DATA_MATRIX(gs);
-  DATA_IVECTOR(infected_chickens);
+  DATA_IVECTOR(infected_birds);
   DATA_VECTOR(test_cases);
   int n_test_cases = test_cases.size();
   PARAMETER(beta_0_base);
@@ -77,8 +77,8 @@ Type objective_function<Type>::operator() ()
   // A scalar for end of treatment.
   Type use_end_treatment;
   // Setting up expectation vector of random effects.
-  matrix<Type> mu_s(n_chickens, n_all_times);
-  for (int i = 0; i < n_chickens; i++){
+  matrix<Type> mu_s(n_birds, n_all_times);
+  for (int i = 0; i < n_birds; i++){
     for (int j = 0; j < n_all_times; j++){
     if (time_relationship == 1){
       // Linear.
@@ -91,7 +91,7 @@ Type objective_function<Type>::operator() ()
       exit(2222);
     } else if (time_relationship == 3){
       // Piecewise exponential.
-      use_end_treatment = end_treatment(1 - infected_chickens(i));
+      use_end_treatment = end_treatment(1 - infected_birds(i));
 	if (all_times(j) > use_end_treatment){
 	  mu_s(i, j) = (alpha_1 + u_1(i))*use_end_treatment + (alpha_2 + u_2(i))*(all_times(j) - use_end_treatment);
 	} else {
@@ -101,7 +101,7 @@ Type objective_function<Type>::operator() ()
     }
   }
   // Initialising matrix of conditional expectations at the final treatment.
-  matrix<Type> lambda_y_mat(n_chickens, 5);
+  matrix<Type> lambda_y_mat(n_birds, 5);
   // Initialising matrix of probabilities of zero detected organisms at final treatment.
   Type p_zero;
   matrix<Type> logit_p_zero(n_test_cases, 5);
@@ -114,7 +114,7 @@ Type objective_function<Type>::operator() ()
   // Declaring log of the joint density.
   Type ljd = 0;
   // Looping over individuals.
-  for (int i = 0; i < n_chickens; i++){
+  for (int i = 0; i < n_birds; i++){
     // Looping over time points.
     for (int j = 0; j < n_measurements(i); j++){
       // Looping over methods.
