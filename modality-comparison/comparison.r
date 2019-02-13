@@ -20,6 +20,43 @@ egs.df[is.na(egs.df)] <- 9999
 emb.df[is.na(emb.df)] <- 9999
 gs.df[is.na(gs.df)] <- 9999
 
+## Plotting the raw data.
+dwm.na.df <- dwm.df
+dwm.na.df[dwm.na.df == 9999] <- NA
+ef.na.df <- ef.df
+ef.na.df[ef.na.df == 9999] <- NA
+egs.na.df <- egs.df
+egs.na.df[egs.na.df == 9999] <- NA
+emb.na.df <- emb.df
+emb.na.df[emb.na.df == 9999] <- NA
+gs.na.df <- gs.df
+gs.na.df[gs.na.df == 9999] <- NA
+
+pdf(width = 8, height = 10, file = "data-plot.pdf")
+par(mfrow = c(3, 2), mar = c(4, 4, 2, 1), las = 1)
+dfs <- c("dwm.na.df", "gs.na.df", "egs.na.df", "emb.na.df", "ef.na.df")
+method.names <- c("DWM", "GS", "MSGS", "MSMB", "MST")
+for (i in 1:5){
+    use.df <- get(dfs[i])
+    plot.new()
+    plot.window(xlim = range(times), ylim = range(use.df, na.rm = TRUE))
+    box()
+    axis(1)
+    axis(2)
+    for (j in 1:n.birds){
+        lines(times, use.df[j, ])
+    }
+    title(main = method.names[i])
+    if (i %in% c(4, 5)){
+        title(xlab = "Days since first treatment")
+    }
+    if (i %in% c(1, 3, 5)){
+        title(ylab = "MO organisms detected")
+    }
+}
+dev.off()
+
+
 ## Figuring out which animals were still infected at the end of treatment.
 check <- 6
 all.df <- cbind(dwm.df[, check], ef.df[, check], egs.df[, check], emb.df[, check], gs.df[, check])
