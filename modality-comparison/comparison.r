@@ -260,14 +260,22 @@ if (mo.data$cov_function == 1){
 }
 plot(seq(0, 35, by = 0.1), cov, ylim = c(0, max(cov)), type = "l")
 
+## Transforming bird sickness latent variables to percentage change.
+s.perc <- 100*(exp(s) - 1)
+
 ## Plot of bird sicknesses.
 pdf(height = 4, width = 6, file = "bird-sickness.pdf")
-par(mar = c(4, 4, 0, 0), oma = rep(0.1, 4), xaxs = "i")
+par(mar = c(4, 4, 0, 0), oma = rep(0.1, 4), xaxs = "i", las = 1)
 cols <- brewer.pal(3, "Set1")[c(2, 3)]
-plot(all.times, s[1, ],  ylim = range(s), type = "n", ylab = "Bird sickness",
-     xlab = "Days since first treatment")
+plot(all.times, s.perc[1, ],  ylim = c(-100, max(s.perc)), type = "n",
+     ylab = "Percentage difference in organisms shed",
+     xlab = "Days since first treatment", axes = FALSE)
+axis(1)
+axis(2, at = seq(-100, 800, by = 100))
+abline(h = -100, col = "grey")
+box()
 for (i in 1:n.birds){
-    lines(all.times, s[i, ], col = cols[logical.infected.birds.et[i] + 1])
+    lines(all.times, s.perc[i, ], col = cols[logical.infected.birds.et[i] + 1])
 }
 abline(v = c(10, 20), lty = "dotted")
 legend("topright", c("Ten-day treatment", "Twenty-day treatment"), lty = rep(1, 2),
