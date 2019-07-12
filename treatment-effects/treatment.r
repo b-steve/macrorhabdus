@@ -23,6 +23,7 @@ infected.birds.et <- combined.df[, 6] > 0
 weight.df <- as.matrix(read.csv("../modality-comparison/data/weight.csv", header = FALSE))
 weight.times <- c(0, 7, 10, 34)
 weight.start <- weight.df[, 1]
+weight.end <- ifelse(is.na(weight.df[, 4]), weight.df[, 3], weight.df[, 4])
 
 ## Getting a vector of treatment endings.
 end.treatment <- ifelse(infected.birds.et, 20, 10)
@@ -36,41 +37,345 @@ treatment.data <- list(n_birds = n.birds,
                        mo_counts = combined.df,
                        n_measurements = n.measurements,
                        weight_start = weight.start,
-                       cov_function = 1  ## 1 for exponential, 2 for squared exponential.
+                       weight_end = weight.end,
+                       cov_function = 1 ## 1 for exponential, 2 for squared exponential.
                        )
-## Parameter starting values.
-treatment.parameters <- list(beta_0 = log(mean(combined.df[, 1])), # Mean at time = 0.
-                             beta_1 = 0.1, # Effect of treatment.
-                             beta_2 = 0.1, # Effect of coming off treatment for early finishers.
-                             beta_3 = 0.1, # Effect of coming off treatment for late finishers.
-                             beta_w = 0.1, # Fixed effect of weight.
-                             beta_wt = 0.1, # Fixed effect of weight-treatment interaction.
-                             log_theta = log(5),
-                             log_sigma_s = 0.1,
-                             log_rho_s = log(1),
-                             s = matrix(1, nrow = n.birds, ncol = n.all.times))
 
 ## Compiling TMB template.
 compile("treatment.cpp")
 dyn.load(dynlib("treatment"))
 
-## Object for full model.
-treatment.obj <- MakeADFun(data = treatment.data,
-                           parameters = treatment.parameters,
-                           #map = list(beta_w = factor(NA)),
-                           random = "s",
-                           DLL = "treatment")
+## NULL MODEL.
+null.pars <- list(beta_0 = log(mean(combined.df[, 1])), # Mean at time = 0.
+                  beta_1 = 0, # Effect of treatment.
+                  beta_2 = 0, # Effect of coming off treatment for early finishers.
+                  beta_3 = 0, # Effect of coming off treatment for late finishers.
+                  beta_w = 0, # Fixed effect of weight.
+                  beta_wt = 0, # Fixed effect of weight-treatment interaction.
+                  beta_wc = 0, # Effect of weight change on final expected count.
+                  alpha_1 = 0,
+                  log_theta = 0,
+                  log_sigma_s = 0,
+                  log_rho_s = 0,
+                  s = matrix(0, nrow = n.birds, ncol = n.all.times))
+## Object for null model.
+null.obj <- MakeADFun(data = treatment.data,
+                      parameters = null.pars,
+                      map = list(beta_1 = factor(NA),
+                                 beta_2 = factor(NA),
+                                 beta_3 = factor(NA),
+                                 beta_w = factor(NA),
+                                 beta_wt = factor(NA),
+                                 beta_wc = factor(NA),
+                                 alpha_1 = factor(NA),
+                                 log_sigma_s = factor(NA),
+                                 log_rho_s = factor(NA),
+                                 s = factor(matrix(NA, nrow = n.birds, ncol = n.all.times))
+                                 ),
+                      DLL = "treatment", silent = TRUE)
+null.obj$fn.use <- function(x = last.par[-random], ...){
+    out <- null.obj$fn(x, ...)
+    cat(x, out, "\n")
+    out
+}
+## Fitting null model.
+null.fit <- nlminb(null.obj$par, null.obj$fn.use, null.obj$gr)
+null.sdrep <- sdreport(null.obj)
+summary(null.sdrep, "fixed")
+null.ests <- summary(null.sdrep, "fixed")[, 1]
 
-## Fitting model.
-treatment.fit <- nlminb(treatment.obj$par, treatment.obj$fn, treatment.obj$gr)
-treatment.rep <- sdreport(treatment.obj)
-summary(treatment.rep, "fixed")
+## INCLUDING RANDOM EFFECTS.
+re.pars <- list(beta_0 = null.ests["beta_0"], # Mean at time = 0.
+                beta_1 = 0, # Effect of treatment.
+                beta_2 = 0, # Effect of coming off treatment for early finishers.
+                beta_3 = 0, # Effect of coming off treatment for late finishers.
+                beta_w = 0, # Fixed effect of weight.
+                beta_wt = 0, # Fixed effect of weight-treatment interaction.
+                beta_wc = 0, # Effect of weight change on final expected count.
+                alpha_1 = 0,
+                log_theta = null.ests["log_theta"],
+                log_sigma_s = 0,
+                log_rho_s = 0,
+                s = matrix(0, nrow = n.birds, ncol = n.all.times))
+## Object for the random-effects model.
+re.obj <- MakeADFun(data = treatment.data,
+                    parameters = re.pars,
+                    map = list(beta_1 = factor(NA),
+                               beta_2 = factor(NA),
+                               beta_3 = factor(NA),
+                               beta_w = factor(NA),
+                               beta_wt = factor(NA),
+                               beta_wc = factor(NA),
+                               alpha_1 = factor(NA)
+                               ),
+                    random = "s",
+                    DLL = "treatment", silent = TRUE)
+re.obj$fn.use <- function(x = last.par[-random], ...){
+    out <- re.obj$fn(x, ...)
+    cat(x, out, "\n")
+    out
+}
+## Fitting random effects model.
+re.fit <- nlminb(re.obj$par, re.obj$fn.use, re.obj$gr)
+re.sdrep <- sdreport(re.obj)
+summary(re.sdrep, "fixed")
+re.ests <- summary(re.sdrep, "fixed")[, 1]
+
+## INCLUDING FIXED TREATMENT EFFECTS.
+tr.pars <-  list(beta_0 = re.ests["beta_0"], # Mean at time = 0.
+                 beta_1 = 0, # Effect of treatment.
+                 beta_2 = 0, # Effect of coming off treatment for early finishers.
+                 beta_3 = 0, # Effect of coming off treatment for late finishers.
+                 beta_w = 0, # Fixed effect of weight.
+                 beta_wt = 0, # Fixed effect of weight-treatment interaction.
+                 beta_wc = 0, # Effect of weight change on final expected count.
+                 alpha_1 = 0,
+                 log_theta = 0,
+                 log_sigma_s = re.ests["log_sigma_s"],
+                 log_rho_s = re.ests["log_rho_s"],
+                 s = matrix(0, nrow = n.birds, ncol = n.all.times))
+## Object for the treatment-effects model.
+tr.obj <- MakeADFun(data = treatment.data,
+                    parameters = tr.pars,
+                    map = list(beta_w = factor(NA),
+                               beta_wt = factor(NA),
+                               beta_wc = factor(NA),
+                               alpha_1 = factor(NA)
+                               ),
+                    random = "s",
+                    DLL = "treatment", silent = TRUE)
+tr.obj$fn.use <- function(x = last.par[-random], ...){
+    out <- tr.obj$fn(x, ...)
+    cat(x, out, "\n")
+    out
+}
+## Fitting treatment-effects model.
+tr.fit <- nlminb(tr.obj$par, tr.obj$fn.use, tr.obj$gr)
+tr.sdrep <- sdreport(tr.obj)
+summary(tr.sdrep, "fixed")
+tr.ests <- summary(tr.sdrep, "fixed")[, 1]
+
+## INCLUDING INTERCEPT INTERACTION EFFECT.
+ii.pars <- list(beta_0 = tr.ests["beta_0"], # Mean at time = 0.
+                beta_1 = tr.ests["beta_1"], # Effect of treatment.
+                beta_2 = tr.ests["beta_2"], # Effect of coming off treatment for early finishers.
+                beta_3 = tr.ests["beta_3"], # Effect of coming off treatment for late finishers.
+                alpha_1 = 0,
+                beta_w = 0, # Fixed effect of weight.
+                beta_wt = 0, # Fixed effect of weight-treatment interaction.
+                beta_wc = 0, # Effect of weight change on final expected count.
+                log_theta = tr.ests["log_theta"],
+                log_sigma_s = tr.ests["log_sigma_s"],
+                log_rho_s = tr.ests["log_rho_s"],
+                s = matrix(0, nrow = n.birds, ncol = n.all.times))
+## Object for the intercept-interaction-effect model.
+ii.obj <- MakeADFun(data = treatment.data,
+                    parameters = ii.pars,
+                    map = list(beta_w = factor(NA),
+                               beta_wt = factor(NA),
+                               beta_wc = factor(NA)
+                               ),
+                    random = "s",
+                    DLL = "treatment", silent = TRUE)
+ii.obj$fn.use <- function(x = last.par[-random], ...){
+    out <- ii.obj$fn(x, ...)
+    cat(x, out, "\n")
+    out
+}
+## Fitting intercept-interaction model.
+ii.fit <- nlminb(ii.obj$par, ii.obj$fn.use, ii.obj$gr)
+ii.sdrep <- sdreport(ii.obj)
+summary(ii.sdrep, "fixed")
+ii.ests <- summary(ii.sdrep, "fixed")[, 1]
+
+## INCLUDING WEIGHT-DIFFERENCE EFFECT FOR FINAL EXPECTATION.
+wc.pars <- list(beta_0 = ii.ests["beta_0"], # Mean at time = 0.
+                beta_1 = ii.ests["beta_1"], # Effect of treatment.
+                beta_2 = ii.ests["beta_2"], # Effect of coming off treatment for early finishers.
+                beta_3 = ii.ests["beta_3"], # Effect of coming off treatment for late finishers.
+                alpha_1 = ii.ests["alpha_1"],
+                beta_w = 0, # Fixed effect of weight.
+                beta_wt = 0, # Fixed effect of weight-treatment interaction.
+                beta_wc = 0, # Effect of weight change on final expected count.
+                log_theta = ii.ests["log_theta"],
+                log_sigma_s = ii.ests["log_sigma_s"],
+                log_rho_s = ii.ests["log_rho_s"],
+                s = matrix(0, nrow = n.birds, ncol = n.all.times))
+## Object for the weight-difference effect model.
+wc.obj <- MakeADFun(data = treatment.data,
+                    parameters = wc.pars,
+                    map = list(beta_w = factor(NA),
+                               beta_wt = factor(NA)
+                               ),
+                    random = "s",
+                    DLL = "treatment", silent = TRUE)
+wc.obj$fn.use <- function(x = last.par[-random], ...){
+    out <- wc.obj$fn(x, ...)
+    cat(x, out, "\n")
+    out
+}
+## Fitting weight-difference model.
+wc.fit <- nlminb(wc.obj$par, wc.obj$fn.use, wc.obj$gr)
+wc.sdrep <- sdreport(wc.obj)
+summary(wc.sdrep, "fixed")
+wc.ests <- summary(wc.sdrep, "fixed")[, 1]
+
+## INCLUDING WEIGHT EFFECT.
+w.pars <- list(beta_0 = wc.ests["beta_0"], # Mean at time = 0.
+               beta_1 = wc.ests["beta_1"], # Effect of treatment.
+               beta_2 = wc.ests["beta_2"], # Effect of coming off treatment for early finishers.
+               beta_3 = wc.ests["beta_3"], # Effect of coming off treatment for late finishers.
+               alpha_1 = wc.ests["alpha_1"],
+               beta_w = 0, # Fixed effect of weight.
+               beta_wt = 0, # Fixed effect of weight-treatment interaction.
+               beta_wc = wc.ests["beta_wc"], # Effect of weight change on final expected count.
+               log_theta = wc.ests["log_theta"],
+               log_sigma_s = wc.ests["log_sigma_s"],
+               log_rho_s = wc.ests["log_rho_s"],
+               s = matrix(0, nrow = n.birds, ncol = n.all.times))
+## Object for the weight-effect model.
+w.obj <- MakeADFun(data = treatment.data,
+                   parameters = w.pars,
+                   map = list(beta_wt = factor(NA)
+                              ),
+                   random = "s",
+                   DLL = "treatment", silent = TRUE)
+w.obj$fn.use <- function(x = last.par[-random], ...){
+    out <- w.obj$fn(x, ...)
+    cat(x, out, "\n")
+    out
+}
+## Fitting weight-effects model.
+w.fit <- nlminb(w.obj$par, w.obj$fn.use, w.obj$gr)
+w.sdrep <- sdreport(w.obj)
+summary(w.sdrep, "fixed")
+w.ests <- summary(w.sdrep, "fixed")[, 1]
+
+## INCLUDING WEIGHT INTERACTION EFFECT.
+wi.pars <- list(beta_0 = w.ests["beta_0"], # Mean at time = 0.
+                beta_1 = w.ests["beta_1"], # Effect of treatment.
+                beta_2 = w.ests["beta_2"], # Effect of coming off treatment for early finishers.
+                beta_3 = w.ests["beta_3"], # Effect of coming off treatment for late finishers.
+                alpha_1 = w.ests["alpha_1"],
+                beta_w = w.ests["beta_w"], # Fixed effect of weight.
+                beta_wt = 0, # Fixed effect of weight-treatment interaction.
+                beta_wc = w.ests["beta_wc"], # Effect of weight change on final expected count.
+                log_theta = w.ests["log_theta"],
+                log_sigma_s = w.ests["log_sigma_s"],
+                log_rho_s = w.ests["log_rho_s"],
+                s = matrix(0, nrow = n.birds, ncol = n.all.times))
+## Object for the weight-interaction-effect model.
+wi.obj <- MakeADFun(data = treatment.data,
+                    parameters = wi.pars,
+                    random = "s",
+                    DLL = "treatment", silent = TRUE)
+wi.obj$fn.use <- function(x = last.par[-random], ...){
+    out <- wi.obj$fn(x, ...)
+    cat(x, out, "\n")
+    out
+}
+## Fitting weight-interaction model.
+wi.fit <- nlminb(wi.obj$par, wi.obj$fn.use, wi.obj$gr)
+wi.sdrep <- sdreport(wi.obj)
+summary(wi.sdrep, "fixed")
+wi.ests <- summary(wi.sdrep, "fixed")[, 1]
+
+## Calculating log-likelihoods.
+null.ll <- -null.fit$objective
+re.ll <- -re.fit$objective
+tr.ll <- -tr.fit$objective
+ii.ll <- -ii.fit$objective
+wc.ll <- -wc.fit$objective
+w.ll <- -w.fit$objective
+wi.ll <- -wi.fit$objective
+## Calculating number of parameters.
+null.npar <- length(null.fit$par)
+re.npar <- length(re.fit$par)
+tr.npar <- length(tr.fit$par)
+ii.npar <- length(ii.fit$par)
+wc.npar <- length(wc.fit$par)
+w.npar <- length(w.fit$par)
+wi.npar <- length(wi.fit$par)
+
+## Calculating AICs.
+null.AIC <- -2*null.ll + 2*null.npar
+re.AIC <- -2*re.ll + 2*re.npar
+tr.AIC <- -2*tr.ll + 2*tr.npar
+ii.AIC <- -2*ii.ll + 2*ii.npar
+wc.AIC <- -2*wc.ll + 2*wc.npar
+w.AIC <- -2*w.ll + 2*w.npar
+wi.AIC <- -2*wi.ll + 2*wi.npar
+
+## Tabulating AICs.
+AICs <- c(null.AIC, re.AIC, tr.AIC, ii.AIC, wc.AIC, w.AIC, wi.AIC)
+npars <- c(null.npar, re.npar, tr.npar, ii.npar, wc.npar, w.npar, wi.npar)
+mod.names <- c("null", "re", "tr", "ii", "wc", "w", "wi")
+data.frame(mod.names, AICs, npars)
+
+## HYPOTHESIS TESTS via likelihood ratio.
+
+## Testing for presence of a weight-difference effect on the final
+## reading at follow-up. Compares models WC and II.
+1 - pchisq(2*(wc.ll - ii.ll), wc.npar - ii.npar) # 0.003.
+
+## Testing for presence of an original weight effect on expected
+## number of MO shedded. Comopares models W and WC.
+1 - pchisq(2*(w.ll - wc.ll), w.npar - wc.npar) # 0.585.
+
+## Testing for presence of an original weight effect on the
+## performance of the treatment. Compares models WI and W.
+1 - pchisq(2*(wi.ll - w.ll), wi.npar - w.npar) # 0.069.
+
+## Testing for presence of an original weight effect at all? Compares
+## models WI and WC.
+1 - pchisq(2*(wi.ll - wc.ll), wi.npar - wc.npar) # 0.165.
+
+## Testing for a presence of initial shedding on the efficacy of the
+## treatment. Compares models II and TR.
+1 - pchisq(2*(ii.ll - tr.ll), ii.npar - tr.npar) # 0.0006.
+
+## Testing for a presence of a treatment effect on expected number of
+## MO shedded. Compares models II and RE.
+1 - pchisq(2*(ii.ll - re.ll), ii.npar - re.npar) # approx 0.
+
 
 ## Collecting expectations.
-summary.rep <- summary(treatment.rep, "report")
-log.mu <- matrix(summary.rep[rownames(summary.rep) == "log_mu", 1], nrow = 16)
+model.fit <- wc.fit # Choose which model to use here.
+model.obj <- wc.obj # And here.
+model.sdrep <- wc.sdrep # And here.
+model.rep <- summary(model.sdrep, "report")
+log.mu <- matrix(model.rep[rownames(model.rep) == "log_mu", 1], nrow = 16)
 
-## Plotting the data.
+log.mu.typical <- model.rep[rownames(model.rep) == "log_mu_typical", 1]
+## Calculating treatment effect for the 'typical' bird.
+t.effect.typical <- model.rep[rownames(model.rep) == "t_effect_typical", 1]
+t.effect.typical.se <- model.rep[rownames(model.rep) == "t_effect_typical", 2]
+t.effect.typical.ci <- t.effect.typical + c(-1, 1)*qnorm(0.975)*t.effect.typical.se
+100*(exp(t.effect.typical) - 1)
+100*(exp(t.effect.typical.ci) - 1)
+
+## Interpreting the effect of weight change on final reading.
+beta.wc <- summary(model.sdrep, "fixed")["beta_wc", 1]
+beta.wc.se <- summary(model.sdrep, "fixed")["beta_wc", 2]
+beta.wc.ci <- beta.wc + c(-1, 1)*qnorm(0.975)*beta.wc.se
+100*(exp(beta.wc) - 1)
+100*(exp(beta.wc.ci) - 1)
+
+
+## Plotting fixed treatment effects.
+t.effect <- model.rep[rownames(model.rep) == "t_effect", 1]
+plot.new()
+plot.window(xlim = range(all.times), ylim = (range(log.mu)))
+box()
+axis(1)
+axis(2)
+for (i in 1:n.birds){
+    lines(all.times, (log.mu[i, ]))
+    abline(log.mu[i, 1], t.effect[i], col = "red")
+}
+
+
+## Plotting the data with expected values.
 plot.new()
 plot.window(xlim = range(all.times), ylim = c(0, max(combined.na.df, na.rm = TRUE)))
 box()
@@ -82,20 +387,19 @@ for (i in 1:n.birds){
     lines(all.times, exp(log.mu[i, ]), col = "red")
 }
 
-i <- 10
+i <- 2
 plot(times, combined.na.df[i, ], xlim = range(all.times),
          ylim = c(0, max(c(exp(log.mu[i, ]), combined.na.df[i, ]), na.rm = TRUE)),
      col = "blue")
 lines(all.times, exp(log.mu[i, ]), col = "red")
+weight.end[i] - weight.start[i]
 
-
-
-
+## Plotting the estimated expectations for each bird.
 plot.new()
-plot.window(xlim = range(all.times), ylim = range(log.mu))
+plot.window(xlim = range(all.times), ylim = exp(range(log.mu)))
 box()
 axis(1)
 axis(2)
 for (i in 1:n.birds){
-    lines(all.times, log.mu[i, ])
+    lines(all.times, exp(log.mu[i, ]))
 }

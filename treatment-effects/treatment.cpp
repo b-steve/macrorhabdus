@@ -24,6 +24,7 @@ Type objective_function<Type>::operator() ()
   DATA_MATRIX(mo_counts);
   DATA_IVECTOR(n_measurements);
   DATA_VECTOR(weight_start);
+  DATA_VECTOR(weight_end);
   DATA_INTEGER(cov_function);
   // Total number of times.
   int n_all_times = all_times.size();
@@ -34,6 +35,8 @@ Type objective_function<Type>::operator() ()
   PARAMETER(beta_3);
   PARAMETER(beta_w);
   PARAMETER(beta_wt);
+  PARAMETER(beta_wc);
+  PARAMETER(alpha_1);
   PARAMETER(log_theta);
   PARAMETER(log_sigma_s);
   PARAMETER(log_rho_s);
@@ -48,6 +51,12 @@ Type objective_function<Type>::operator() ()
   matrix<Type> log_mu(n_birds, n_all_times);
   // Initialising final beta.
   Type final_beta;
+  // Initialising overall treatment effects.
+  vector<Type> t_effect(n_birds);
+  // Initialising log_mu for the typical bird.
+  vector<Type> log_mu_typical(n_all_times);
+  // Initialising treatment effect for the typical bird.
+  Type t_effect_typical;
   for (int i = 0; i < n_birds; i++){
     for (int j = 0; j < n_all_times; j++){
       if (end_treatment(i) == 10){
@@ -57,11 +66,32 @@ Type objective_function<Type>::operator() ()
       }
       if (all_times(j) < end_treatment(i)){
 	log_mu(i, j) = beta_0 - beta_1*all_times(j) + beta_w*weight_start(i) + beta_wt*all_times(j)*weight_start(i) + s(i, j);
+	// Interaction effect of intercept.
+	log_mu(i, j) += alpha_1*all_times(j)*log_mu(i, 0);
       } else {
 	log_mu(i, j) = beta_0 - beta_1*end_treatment(i) + beta_w*weight_start(i) + beta_wt*end_treatment(i)*weight_start(i) + final_beta*(all_times(j) - end_treatment(i)) + s(i, j);
+	// Interaction effect of intercept.
+	log_mu(i, j) += alpha_1*end_treatment(i)*log_mu(i, 0);
+      }
+      if (all_times(j) < 10){
+	if (i == 0){
+	  log_mu_typical(j) = beta_0 - beta_1*all_times(j);
+	  log_mu_typical(j) += alpha_1*all_times(j)*log_mu_typical(0);
+	}
+      } else {
+	if (i == 0){
+	  log_mu_typical(j) = beta_0 - beta_1*end_treatment(i) + beta_2*(all_times(j) - end_treatment(i));
+	  log_mu_typical(j) += alpha_1*end_treatment(i)*log_mu_typical(0);
+	}
       }
     }
+    // Saving overall treatment effects.
+    t_effect(i) = -beta_1 + beta_wt*weight_start(i) + alpha_1*log_mu(i, 0);
+    // Adding in effect of weight change on final expectation.
+    log_mu(i, n_all_times - 1) += beta_wc*(weight_end(i) - weight_start(i));
   }
+  // Typical treatment effect.
+  t_effect_typical = -beta_1 + alpha_1*log_mu_typical(0);
   // Initialising expectation.
   Type mu;
   // Initialising variance-covariance matrix for latent variables.
@@ -87,13 +117,17 @@ Type objective_function<Type>::operator() ()
 	}
       }
     }
+    //std::cout << sigma_s_mat << std::endl; exit(2123);
     ljd -= MVNORM(sigma_s_mat)(s.row(i));
   }
   // ADREPORTS.
   ADREPORT(theta);
-  //ADREPORT(rho_s);
-  //ADREPORT(sigma_s);
+  ADREPORT(rho_s);
+  ADREPORT(sigma_s);
   ADREPORT(log_mu);
+  ADREPORT(log_mu_typical);
+  ADREPORT(t_effect);
+  ADREPORT(t_effect_typical);
   std::cout << "LJD: " << ljd << std::endl;
   ljd *= -1;
   return ljd;
