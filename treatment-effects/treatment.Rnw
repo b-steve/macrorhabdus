@@ -1,56 +1,19 @@
-\documentclass[11pt]{article}\usepackage[]{graphicx}\usepackage[]{color}
-%% maxwidth is the original width if it is less than linewidth
-%% otherwise use linewidth (to make sure the graphics do not exceed the margin)
-\makeatletter
-\def\maxwidth{ %
-  \ifdim\Gin@nat@width>\linewidth
-    \linewidth
-  \else
-    \Gin@nat@width
-  \fi
+\documentclass[11pt]{article}
+
+<<setup, include = FALSE>>=
+load("treatment.RData")
+prt <- function(x, dp = 2){
+    format(round(x, dp), nsmall = dp)
 }
-\makeatother
-
-\definecolor{fgcolor}{rgb}{0.345, 0.345, 0.345}
-\newcommand{\hlnum}[1]{\textcolor[rgb]{0.686,0.059,0.569}{#1}}%
-\newcommand{\hlstr}[1]{\textcolor[rgb]{0.192,0.494,0.8}{#1}}%
-\newcommand{\hlcom}[1]{\textcolor[rgb]{0.678,0.584,0.686}{\textit{#1}}}%
-\newcommand{\hlopt}[1]{\textcolor[rgb]{0,0,0}{#1}}%
-\newcommand{\hlstd}[1]{\textcolor[rgb]{0.345,0.345,0.345}{#1}}%
-\newcommand{\hlkwa}[1]{\textcolor[rgb]{0.161,0.373,0.58}{\textbf{#1}}}%
-\newcommand{\hlkwb}[1]{\textcolor[rgb]{0.69,0.353,0.396}{#1}}%
-\newcommand{\hlkwc}[1]{\textcolor[rgb]{0.333,0.667,0.333}{#1}}%
-\newcommand{\hlkwd}[1]{\textcolor[rgb]{0.737,0.353,0.396}{\textbf{#1}}}%
-\let\hlipl\hlkwb
-
-\usepackage{framed}
-\makeatletter
-\newenvironment{kframe}{%
- \def\at@end@of@kframe{}%
- \ifinner\ifhmode%
-  \def\at@end@of@kframe{\end{minipage}}%
-  \begin{minipage}{\columnwidth}%
- \fi\fi%
- \def\FrameCommand##1{\hskip\@totalleftmargin \hskip-\fboxsep
- \colorbox{shadecolor}{##1}\hskip-\fboxsep
-     % There is no \\@totalrightmargin, so:
-     \hskip-\linewidth \hskip-\@totalleftmargin \hskip\columnwidth}%
- \MakeFramed {\advance\hsize-\width
-   \@totalleftmargin\z@ \linewidth\hsize
-   \@setminipage}}%
- {\par\unskip\endMakeFramed%
- \at@end@of@kframe}
-\makeatother
-
-\definecolor{shadecolor}{rgb}{.97, .97, .97}
-\definecolor{messagecolor}{rgb}{0, 0, 0}
-\definecolor{warningcolor}{rgb}{1, 0, 1}
-\definecolor{errorcolor}{rgb}{1, 0, 0}
-\newenvironment{knitrout}{}{} % an empty environment to be redefined in TeX
-
-\usepackage{alltt}
-
-
+prt.p <- function(x, dp = 3){
+    if (x < 0.001){
+        out <- "p < 0.001"
+    } else {
+        out <- paste("p =", prt(x, dp))
+    }
+    out
+}
+@ 
 
 %\usepackage{bm}
 %\usepackage{amsmath}
@@ -59,7 +22,7 @@
 %\usepackage{amsthm}
 \usepackage{hyperref}
 \usepackage[marginparwidth = 75pt, textwidth = 6in, footskip = 60pt]{geometry}
-\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+
 \begin{document}
 
 \section{Some words to insert into the Statistical Analysis section}
@@ -113,22 +76,22 @@ follow-up decreases by 24\% (95\% CI: 8 to 38\%).'')
 Likelihood-ratio tests were used to test for presence of the effects
 described in Section [Statistical Analysis Section number]. There was
 strong evidence to suggest that shedding decreased during the
-treatment period ($p < 0.001$) and that the initial
+treatment period ($\Sexpr{prt.p(treat.p)}$) and that the initial
 shedding rate was associated with this decrease
-($p = 0.014$). Birds shedding more MO organisms at the
+($\Sexpr{prt.p(shed.p)}$). Birds shedding more MO organisms at the
 beginning of treatment had smaller percentage decreases in expected
-shedding rates. For example, Bird 5 shed $333$
+shedding rates. For example, Bird 5 shed $\Sexpr{combined.df[5, 1]}$
 organisms on the first day of treatment and the model estimated (with
 $95\%$ CI in parentheses) that each day of treatment was associated
-with a $17\%$
-$(7,
-26\%)$ decrease in the
+with a $\Sexpr{prt(abs(t.effects.perc[5]), 0)}\%$
+$(\Sexpr{prt(abs(t.effects.perc.ci[5, 2]), 0)},
+\Sexpr{prt(abs(t.effects.perc.ci[5, 1]), 0)}\%)$ decrease in the
 expected number of MO shed, while the corresponding estimated effect
-for Bird 14, which shed only $15$ organisms on
+for Bird 14, which shed only $\Sexpr{combined.df[14, 1]}$ organisms on
 the first day of treatment, was a reduction of
-$46\%$
-$(33,
-56\%)$ per day. Every bird
+$\Sexpr{prt(abs(t.effects.perc[14]), 0)}\%$
+$(\Sexpr{prt(abs(t.effects.perc.ci[14, 2]), 0)},
+\Sexpr{prt(abs(t.effects.perc.ci[14, 1]), 0)}\%)$ per day. Every bird
 had an estimated treatment effect that was significantly different
 from zero, providing evidence to suggest that time on the treatment
 was associated with decreases in MO shedding for all birds.
@@ -136,7 +99,7 @@ was associated with decreases in MO shedding for all birds.
 There was no evidence to suggest that bird weight at the beginning the
 treatment was associated with either the expected number of MO
 organisms shed or the effect of treatment on MO shedding
-($p = 0.165$).
+($\Sexpr{prt.p(joint.weight.p)}$).
 
 There was evidence to suggest that changes in MO organism shedding
 rates after treatment concluded were different to changes during
