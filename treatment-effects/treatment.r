@@ -220,6 +220,32 @@ wc.sdrep <- sdreport(wc.obj)
 summary(wc.sdrep, "fixed")
 wc.ests <- summary(wc.sdrep, "fixed")[, 1]
 
+## Holding beta_1 at 0 for likelihood-ratio test.
+wc.hold.b1.pars <- wc.pars
+wc.hold.b1.pars$beta_1 <- 0
+wc.hold.b1.obj <- wc.obj <- MakeADFun(data = treatment.data,
+                                      parameters = wc.hold.b1.pars,
+                                      map = list(beta_1 = factor(NA),
+                                                 beta_w = factor(NA),
+                                                 beta_wt = factor(NA)
+                                                 ),
+                                      random = "s",
+                                      DLL = "treatment", silent = TRUE)
+wc.hold.b1.fit <- nlminb(wc.hold.b1.obj$par, wc.hold.b1.obj$fn, wc.hold.b1.obj$gr)
+
+## Holding alpha_1 at 0 for likelihood-ratio test.
+wc.hold.a1.pars <- wc.pars
+wc.hold.a1.pars$alpha_1 <- 0
+wc.hold.a1.obj <- wc.obj <- MakeADFun(data = treatment.data,
+                                      parameters = wc.hold.a1.pars,
+                                      map = list(beta_w = factor(NA),
+                                                 beta_wt = factor(NA),
+                                                 alpha_1 = factor(NA)
+                                                 ),
+                                      random = "s",
+                                      DLL = "treatment", silent = TRUE)
+wc.hold.a1.fit <- nlminb(wc.hold.a1.obj$par, wc.hold.a1.obj$fn, wc.hold.a1.obj$gr)
+
 ## INCLUDING WEIGHT EFFECT.
 w.pars <- list(beta_0 = wc.ests["beta_0"], # Mean at time = 0.
                beta_1 = wc.ests["beta_1"], # Effect of treatment.
@@ -286,6 +312,8 @@ re.ll <- -re.fit$objective
 tr.ll <- -tr.fit$objective
 ii.ll <- -ii.fit$objective
 wc.ll <- -wc.fit$objective
+wc.hold.b1.ll <- -wc.hold.b1.fit$objective
+wc.hold.a1.ll <- -wc.hold.a1.fit$objective
 w.ll <- -w.fit$objective
 wi.ll <- -wi.fit$objective
 ## Calculating number of parameters.
@@ -294,6 +322,8 @@ re.npar <- length(re.fit$par)
 tr.npar <- length(tr.fit$par)
 ii.npar <- length(ii.fit$par)
 wc.npar <- length(wc.fit$par)
+wc.hold.b1.npar <- length(wc.hold.b1.fit$par)
+wc.hold.a1.npar <- length(wc.hold.a1.fit$par)
 w.npar <- length(w.fit$par)
 wi.npar <- length(wi.fit$par)
 
@@ -303,6 +333,8 @@ re.AIC <- -2*re.ll + 2*re.npar
 tr.AIC <- -2*tr.ll + 2*tr.npar
 ii.AIC <- -2*ii.ll + 2*ii.npar
 wc.AIC <- -2*wc.ll + 2*wc.npar
+wc.hold.b1.AIC <- -2*wc.hold.b1.ll + 2*wc.hold.b1.npar
+wc.hold.a1.AIC <- -2*wc.hold.a1.ll + 2*wc.hold.a1.npar
 w.AIC <- -2*w.ll + 2*w.npar
 wi.AIC <- -2*wi.ll + 2*wi.npar
 
@@ -320,23 +352,23 @@ data.frame(mod.names, AICs, npars)
 
 ## Testing for presence of an original weight effect on expected
 ## number of MO shedded. Comopares models W and WC.
-1 - pchisq(2*(w.ll - wc.ll), w.npar - wc.npar) # 0.585.
+weight.p <- 1 - pchisq(2*(w.ll - wc.ll), w.npar - wc.npar) # 0.585.
 
 ## Testing for presence of an original weight effect on the
 ## performance of the treatment. Compares models WI and W.
 1 - pchisq(2*(wi.ll - w.ll), wi.npar - w.npar) # 0.069.
 
-## Testing for presence of an original weight effect at all? Compares
+## Testing for presence of an original weight effect at all. Compares
 ## models WI and WC.
-1 - pchisq(2*(wi.ll - wc.ll), wi.npar - wc.npar) # 0.165.
+joint.weight.p <- 1 - pchisq(2*(wi.ll - wc.ll), wi.npar - wc.npar) # 0.165.
 
 ## Testing for a presence of initial shedding on the efficacy of the
 ## treatment. Compares models II and TR.
-1 - pchisq(2*(ii.ll - tr.ll), ii.npar - tr.npar) # 0.0006.
+shed.p <- 1 - pchisq(2*(wc.ll - wc.hold.a1.ll), wc.npar - wc.hold.a1.npar) # 0.014
 
 ## Testing for a presence of a treatment effect on expected number of
-## MO shedded. Compares models II and RE.
-1 - pchisq(2*(ii.ll - re.ll), ii.npar - re.npar) # approx 0.
+## MO shedded. Compares models WC and WC.HOLD.B1.
+treat.p <- 1 - pchisq(2*(wc.ll - wc.hold.b1.ll), wc.npar - wc.hold.b1.npar) # approx 0.
 
 
 ## Collecting expectations.
@@ -346,13 +378,14 @@ model.sdrep <- wc.sdrep # And here.
 model.rep <- summary(model.sdrep, "report")
 log.mu <- matrix(model.rep[rownames(model.rep) == "log_mu", 1], nrow = 16)
 
-log.mu.typical <- model.rep[rownames(model.rep) == "log_mu_typical", 1]
-## Calculating treatment effect for the 'typical' bird.
-t.effect.typical <- model.rep[rownames(model.rep) == "t_effect_typical", 1]
-t.effect.typical.se <- model.rep[rownames(model.rep) == "t_effect_typical", 2]
-t.effect.typical.ci <- t.effect.typical + c(-1, 1)*qnorm(0.975)*t.effect.typical.se
-100*(exp(t.effect.typical) - 1)
-100*(exp(t.effect.typical.ci) - 1)
+## Calculating the treatment effects for the birds.
+t.effects <-  model.rep[rownames(model.rep) == "t_effect", 1]
+t.effects.se <- model.rep[rownames(model.rep) == "t_effect", 2]
+t.effects.ci.lower <- t.effects - qnorm(0.975)*t.effects.se
+t.effects.ci.upper <- t.effects + qnorm(0.975)*t.effects.se
+t.effects.ci <- cbind(t.effects.ci.lower, t.effects.ci.upper)
+t.effects.perc <- 100*(exp(t.effects) - 1)
+t.effects.perc.ci <- 100*(exp(t.effects.ci) - 1)
 
 ## Interpreting the effect of weight change on final reading.
 beta.wc <- summary(model.sdrep, "fixed")["beta_wc", 1]
@@ -387,7 +420,7 @@ for (i in 1:n.birds){
     lines(all.times, exp(log.mu[i, ]), col = "red")
 }
 
-i <- 2
+i <- 12
 plot(times, combined.na.df[i, ], xlim = range(all.times),
          ylim = c(0, max(c(exp(log.mu[i, ]), combined.na.df[i, ]), na.rm = TRUE)),
      col = "blue")
@@ -403,3 +436,4 @@ axis(2)
 for (i in 1:n.birds){
     lines(all.times, exp(log.mu[i, ]))
 }
+save.image(file = "treatment.RData")
