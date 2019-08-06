@@ -342,37 +342,40 @@ wi.AIC <- -2*wi.ll + 2*wi.npar
 AICs <- c(null.AIC, re.AIC, tr.AIC, ii.AIC, wc.AIC, w.AIC, wi.AIC)
 npars <- c(null.npar, re.npar, tr.npar, ii.npar, wc.npar, w.npar, wi.npar)
 mod.names <- c("null", "re", "tr", "ii", "wc", "w", "wi")
+## Best model by AIC is wc.
 data.frame(mod.names, AICs, npars)
 
-## HYPOTHESIS TESTS via likelihood ratio.
-
-## Testing for presence of a weight-difference effect on the final
-## reading at follow-up. Compares models WC and II.
-1 - pchisq(2*(wc.ll - ii.ll), wc.npar - ii.npar) # 0.003.
+## Hypothesis tests via likelihood ratio.
 
 ## Testing for presence of an original weight effect on expected
 ## number of MO shedded. Comopares models W and WC.
-weight.p <- 1 - pchisq(2*(w.ll - wc.ll), w.npar - wc.npar) # 0.585.
+weight.lrts <- 2*(w.ll - wc.ll)
+weight.p <- 1 - pchisq(weight.lrts, w.npar - wc.npar) # 0.585.
 
-## Testing for presence of an original weight effect on the
-## performance of the treatment. Compares models WI and W.
-1 - pchisq(2*(wi.ll - w.ll), wi.npar - w.npar) # 0.069.
-
-## Testing for presence of an original weight effect at all. Compares
-## models WI and WC.
-joint.weight.p <- 1 - pchisq(2*(wi.ll - wc.ll), wi.npar - wc.npar) # 0.165.
+## Testing for presence of an original weight effect at all (both its
+## direct effect on shedding, and its interaction with
+## treatment). Compares models WI and WC.
+joint.weight.lrts <- 2*(wi.ll - wc.ll)
+joint.weight.p <- 1 - pchisq(joint.weight.lrts, wi.npar - wc.npar) # 0.165.
 
 ## Testing for a presence of initial shedding on the efficacy of the
-## treatment. Compares models II and TR.
-shed.p <- 1 - pchisq(2*(wc.ll - wc.hold.a1.ll), wc.npar - wc.hold.a1.npar) # 0.014
+## treatment. Compares models WC and WC.HOLD.A1.
+shed.lrts <- 2*(wc.ll - wc.hold.a1.ll)
+shed.p <- 1 - pchisq(shed.lrts, wc.npar - wc.hold.a1.npar) # 0.014
 
 ## Testing for a presence of a treatment effect on expected number of
 ## MO shedded. Compares models WC and WC.HOLD.B1.
-treat.p <- 1 - pchisq(2*(wc.ll - wc.hold.b1.ll), wc.npar - wc.hold.b1.npar) # approx 0.
+treat.lrts <- 2*(wc.ll - wc.hold.b1.ll)
+treat.p <- 1 - pchisq(treat.lrts, wc.npar - wc.hold.b1.npar) # <0.0001.
+
+## Testing for presence of a weight-difference effect on the final
+## reading at follow-up. Compares models WC and II.
+weightchange.lrts <- 2*(wc.ll - ii.ll)
+weightchange.p <- 1 - pchisq(weightchange.lrts, wc.npar - ii.npar) # 0.003.
 
 
 ## Collecting expectations.
-model.fit <- wc.fit # Choose which model to use here.
+model.fit <- wc.fit # Choose which model to use here. (Set at best model by AIC, wc.fit)
 model.obj <- wc.obj # And here.
 model.sdrep <- wc.sdrep # And here.
 model.rep <- summary(model.sdrep, "report")
@@ -391,8 +394,8 @@ t.effects.perc.ci <- 100*(exp(t.effects.ci) - 1)
 beta.wc <- summary(model.sdrep, "fixed")["beta_wc", 1]
 beta.wc.se <- summary(model.sdrep, "fixed")["beta_wc", 2]
 beta.wc.ci <- beta.wc + c(-1, 1)*qnorm(0.975)*beta.wc.se
-100*(exp(beta.wc) - 1)
-100*(exp(beta.wc.ci) - 1)
+wc.effect <- 100*(exp(beta.wc) - 1)
+wc.effect.ci <- 100*(exp(beta.wc.ci) - 1)
 
 
 ## Plotting fixed treatment effects.
@@ -404,7 +407,6 @@ axis(1)
 axis(2)
 for (i in 1:n.birds){
     lines(all.times, (log.mu[i, ]))
-    abline(log.mu[i, 1], t.effect[i], col = "red")
 }
 
 
@@ -420,12 +422,12 @@ for (i in 1:n.birds){
     lines(all.times, exp(log.mu[i, ]), col = "red")
 }
 
-i <- 12
+## Choose a bird to just plot one.
+i <- 1
 plot(times, combined.na.df[i, ], xlim = range(all.times),
          ylim = c(0, max(c(exp(log.mu[i, ]), combined.na.df[i, ]), na.rm = TRUE)),
      col = "blue")
 lines(all.times, exp(log.mu[i, ]), col = "red")
-weight.end[i] - weight.start[i]
 
 ## Plotting the estimated expectations for each bird.
 plot.new()
