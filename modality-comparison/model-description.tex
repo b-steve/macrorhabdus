@@ -1,0 +1,89 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{bm}
+\usepackage[parfill]{parskip}
+\usepackage{color}
+\usepackage{hyperref}
+\usepackage[left = 3.5cm, right = 3.5cm, top = 3.0cm, bottom = 4.5cm]{geometry}
+
+\title{Model description}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+For each bird, counts of \emph{Macrorhabdus ornithogaster} using the
+five diagnostic tests were taken on selected days. Let $y_{ijk}$ be
+the number of \emph{M.\ ornithogaster} observed for the $i$th bird, on
+the $j$th day its samples were taken, using the $k$th test. 
+
+The observed counts exhibit two types of correlation that must be
+modelled when it comes to statistical analysis. First, counts from the
+same bird and the same day but using different diagnostics tests are
+correlated, because both are related to the bird's unknown shedding
+rate; if the bird is shedding many \emph{M.\ ornithogaster} organisms
+then large numbers are likely to be detected using all diagnostic
+tests. Second, counts from different samples taken soon after one
+another, but on different days, may be correlated due to the bird's
+unknown shedding rate varying slowly over time; a bird shedding many
+\emph{M.\ ornithogaster} organisms on a particular day may still have
+a high shedding rate the following day.
+
+Our model accounts for both forms of correlation by fitting a
+state-space model, where the state process represents a latent
+variable related to the unknown shedding rates of the birds, which we
+hereafter refer to as a shedding measure. We fit a negative binomial
+distribution to each observed count, which is a distribution commonly
+used for count data with high variance like ours. The observed count
+$y_{ijk}$ has the expectation
+\begin{equation}
+\lambda_{ijk} = \exp\{\beta_{0k} +  s_{ij}\},
+\end{equation}
+where $s_{ij}$ is a latent variable related to the shedding measure of
+the $i$th bird on the $j$th day its samples were taken, and
+$\beta_{0k}$ controls the relationship between this shedding measure
+and the expected number of organisms detected using the $k$th
+method. A diagnostic test with a large $\beta_{0k}$ is capable of
+detecing many organisms, and may therefore be more effective at
+diagnosing an \emph{M.\ ornithogaster} infection.
+
+The latent shedding measure of a bird may vary over time due to both
+treatment and random day-to-day fluctuations caused by other
+processes, such as bird health and immune response. Our model allows
+the shedding measure to change over time differently during treatment
+and non-treatment periods, for example to accommodate a decrease in
+shedding during treatment but a potential increase upon its
+cessation. We use
+\begin{equation}
+  s_{ij} = \alpha_1 t_j + u_j
+\end{equation}
+for measurements taken during the treatment period, where $t_j$ is
+the number of days since the beginning of treatment when the $j$th day
+the bird's samples were taken, and
+\begin{equation}
+  s_{ij} =  \alpha_1 t_e + \alpha_2 (t_j - t_e) + u_j
+\end{equation}
+for measurements following the cessation of treatment, where $t_e$ is
+the total number of treatment days. The parameters $\alpha_1$ and
+$\alpha_2$ control the per-day change in the bird's shedding measure
+during treatment and following cessation of treatment,
+respectively. Finally, $u_j$ accounts for changes in shedding due to
+other factors, for example bird health, which we model using a
+Gaussian process to account for correlation between two counts from
+samples from the same bird taken close together in time.
+
+Comparing $\beta_{0k}$ parameters between different diagnostic tests
+allows us to determine if some tests tend to detect larger numbers of
+organisms than others. Moreover, our model allows calculation of the
+probability of successfully diagnosing a \emph{M.\ ornithogaster}
+infection given a particular shedding measure and diagnostic test,
+achieved by calculating the probability of a nonzero count under the
+fitted negative binomial distribution. To further assess the
+diagnostic performance of the tests, we calculated the probability of
+successful diagnosis using the different tests, based on the estimated
+shedding measures at end-of-treatment and follow up of the birds that
+remained infected throughout the experiment.
+\end{document}
