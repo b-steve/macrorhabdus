@@ -12,7 +12,7 @@ All analyses require the free software environment [R](https://www.r-project.org
 
 ## Comparison of in-clinic diagnostic testing methods for *Macrorhabdus ornithogaster*
 
-R code for the analysis of the point-of-care diagnostic modality comparison can be found in the file `modality-comparison/comparison.r`.
+R code for the analysis of the point-of-care diagnostic modality comparison can be found in the file `clinic-modality-comparison/comparison.r`.
 
 Requirements:
 * The R package `TMB`
