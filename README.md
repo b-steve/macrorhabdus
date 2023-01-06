@@ -4,7 +4,7 @@ This repository contains data and code for the statistical analyses found in the
 
 * Baron, H. R., Stevenson, B. C., and Phalen, D. N. (2021) Comparison of in-clinic diagnostic testing methods for *Macrorhabdus ornithogaster*. *Journal of Avian Medicine and Surgery*, *35*(1), 37&ndash;44.
 
-* Baron, H. R., Stevenson, B. C., and Phalen, D. N. (in preparation) Inconsistent efficacy of water soluble Amphotericin B for the treatment of *Macrorhabdus ornithogaster* in a budgerigar (*Melopsittacus undulatus*) aviary. *Australian Veterinary Journal*, *98*(7), 333&ndash;337.
+* Baron, H. R., Stevenson, B. C., and Phalen, D. N. (2020) Inconsistent efficacy of water soluble Amphotericin B for the treatment of *Macrorhabdus ornithogaster* in a budgerigar (*Melopsittacus undulatus*) aviary. *Australian Veterinary Journal*, *98*(7), 333&ndash;337.
 
 * Baron, H. R., Leung, C. L., Stevenson, B. C., Gonzalez, M. S., and Phalen, D. N. (2019) Evidence of Amphotericin B resistance in *Macrorhabdus ornithogaster* in Australian cage-birds. *Medical Mycology*, *57*(4), 421&ndash;428.
 
