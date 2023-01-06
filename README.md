@@ -2,40 +2,50 @@
 
 This repository contains data and code for the statistical analyses found in the following manuscripts:
 
-* Baron, H. R., Leung, C. L., Stevenson, B. C., Gonzalez, M. S., and Phalen, D. N. (in press) Evidence of Amphotericin B resistance in *Macrorhabdus ornithogaster* in Australian cage-birds. *Medical Mycology*.
+* Baron, H. R., Stevenson, B. C., and Phalen, D. N. (2021) Comparison of in-clinic diagnostic testing methods for *Macrorhabdus ornithogaster*. *Journal of Avian Medicine and Surgery*, *35*(1), 37--44.
 
-* Baron, H. R., Stevenson, B. C., and Phalen, D. N. (in preparation) Comparison of point-of-care diagnostic modalities for *Macrorhabdus ornithogaster*.
+* Baron, H. R., Stevenson, B. C., and Phalen, D. N. (in preparation) Inconsistent efficacy of water soluble Amphotericin B for the treatment of *Macrorhabdus ornithogaster* in a budgerigar (*Melopsittacus undulatus*) aviary. *Australian Veterinary Journal*, *98*(7), 333--337.
+
+* Baron, H. R., Leung, C. L., Stevenson, B. C., Gonzalez, M. S., and Phalen, D. N. (2019) Evidence of Amphotericin B resistance in *Macrorhabdus ornithogaster* in Australian cage-birds. *Medical Mycology*, *57*(4), 421--428.
 
 All analyses require the free software environment [R](https://www.r-project.org/).
 
-## Chicken treatment trials
+## Comparison of in-clinic diagnostic testing methods for *Macrorhabdus ornithogaster*
 
-R code for the analysis of the chicken treatment trials data in Baron et al. (in press) can be found in the file `ab-resistance/chickens.r`.
+R code for the analysis of the point-of-care diagnostic modality comparison can be found in the file `modality-comparison/comparison.r`.
 
-### Requirements
+Requirements:
+* The R package `TMB`
+* A C++ compiler.
 
-This code requires the R package `TMB` and a C++ compiler.
+## Inconsistent efficacy of water soluble Amphotericin B for the treatment of *Macrorhabdus ornithogaster* in a budgerigar (*Melopsittacus undulatus*) aviary
 
-## Lovebird and budgerigar screening
+R code for the analysis of the budgerigar faecal shedding data can be found in the file `treatment-effects/treatment.r`.
 
-R code for the analysis of the lovebird and budgerigar screening data in Baron et al. (in press) can be found in the file `ab-resistance/screening.r`.
+Requirements:
+* The R package `TMB`
+* A C++ compiler
 
-### Requirements
+## Evidence of Amphotericin B resistance in *Macrorhabdus ornithogaster* in Australian cage-birds
 
-This code requries the R package `lubridate`.
+### Chicken treatment trials
 
-## Amphotericin B  treatment success 2008–2017
+R code for the analysis of the chicken treatment trials data can be found in the file `ab-resistance/chickens.r`.
 
-R code for the analysis of the amphotericin B treatment success data in Baron et al. (in press) can be found in the file `ab-resistance/treatment-success.r`.
+Requirements:
+* The R package `TMB`
+* A C++ compiler
 
-### Requirements
+### Lovebird and budgerigar screening
 
-This code requires the R package `survival`.
+R code for the analysis of the lovebird and budgerigar screening data can be found in the file `ab-resistance/screening.r`.
 
-## Comparison of point-of-care diagnostic modalities
+Requirements:
+* The R package `lubridate`
 
-R code for the analysis of the point-of-care diagnostic modality comprison in Baron, Stevenson, and Phalen (in preparation) can be found in the file `modality-comparison/comparison.r`.
+### Amphotericin B treatment success 2008–2017
 
-### Requirements
+R code for the analysis of the Amphotericin B treatment success data can be found in the file `ab-resistance/treatment-success.r`.
 
-This code requires the R packates `TMB` and a C++ compiler.
+Requirements:
+* The R package `survival`
