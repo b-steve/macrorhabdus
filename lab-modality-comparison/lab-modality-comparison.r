@@ -32,6 +32,7 @@ for (i in vars){
 }
 
 ## A plot comparing the sample proportions.
+pdf(file = "prop-mp.pdf", width = 9)
 n.vars <- length(vars)
 par(las = 1, yaxs = "i")
 plot.new()
@@ -61,6 +62,7 @@ for (i in 1:n.vars){
         lines(rep(i*2 - 2 + j, 2), cis[j, ])
     }
 }
+dev.off()
 
 ## Extracting p-values from the logistic regression models for each of the effects.
 sapply(fits, function(x) summary(x)$coefficients[2, 4])
@@ -71,59 +73,64 @@ sapply(ors, function(x) x$p.value[2, 1])
 
 ## Extracting just the columns for the modalities being compared.
 mod.df <- df[, c("mft", "pvf", "pcri", "pcrf", "hist")]
+mod.names <- c("Macro float technique", "Proventricular float", "PCR (isthmus)", "PCR (faeces)", "Histopathology")
 n.mods <- ncol(mod.df)
 ## Calculating sample positive proportions.
 samp.props <- apply(mod.df, 2, function(x) mean(x == "positive"))
-## Creating bootstrap data sets.
-n.boots <- 10000
-boots.df <- vector("list", n.boots)
-for (i in 1:n.boots){
-    ## Sampling rows with replacement.
-    boots.df[[i]] <- mod.df[sample(n.birds, replace = TRUE), ]
+## Extracting just the columns for the modalities being compared.
+mod.df <- df[, c("mft", "pvf", "pcri", "pcrf", "hist")]
+mod.names <- c("Macro float technique", "Proventricular float", "PCR (isthmus)", "PCR (faeces)", "Histopathology")
+n.mods <- ncol(mod.df)
+## Calculating sample positive proportions.
+samp.props <- apply(mod.df, 2, function(x) mean(x == "positive"))
+## Calculating confidence intervals for the proportions.
+prop.cis <- matrix(0, nrow = n.mods, ncol = 2)
+for (i in 1:n.mods){
+    prop.cis[i, ] <- plogis(confint(glm(mod.df[, i] == "positive" ~ 1, family = "binomial")))
 }
 
-## Positive proportions for each modality for each bootstrap data set.
-boot.props <- sapply(boots.df, function(x) apply(x, 2, function(x) mean(x == "positive")))
-## Bootstrap percentile CIs for each modality's positive proportion.
-prop.cis <- t(apply(boot.props, 1, quantile, probs = c(0.025, 0.975)))
-
 ## A plot for sample positive proportions.
+pdf("mod-comparison.pdf", width = 9)
 par(las = 1, yaxs = "i")
 plot.new()
 plot.window(xlim = c(1, n.mods), ylim = c(0, 1))
 box()
 axis(2)
-axis(1, at = 1:n.mods, labels = names(mod.df))
+axis(1, at = 1:n.mods, labels = mod.names)
 points(1:n.mods, samp.props, pch = 16)
 segments(1:5, prop.cis[, 1], 1:5, prop.cis[, 2])
+dev.off()
 
-## A function for pairwise differences.
-pairwise.diffs <- function(x){
-    out <- outer(x, x, `-`)
-    out <- out[lower.tri(out)]
-    if (!is.null(names(x))){
-        out.names <- outer(names(x), names(x), function(x1, x2) paste0(x1, " - ", x2))
-        names(out) <- out.names[lower.tri(out.names)]
+## Functions for exact- and mid-p values for McNemar's test.
+mcnemar.exact.p <- function(x){
+    if (x[1, 2] == x[2, 1]){
+        out <- 1 - 0.5*dbinom(x[1, 2], x[1, 2] + x[2, 1], 0.5)
+    } else {
+        out <- 2*pbinom(min(c(x[1, 2], x[2, 1])), x[1, 2] + x[2, 1], 0.5)
     }
     out
 }
-## Calculating differences between sample proportions.
-samp.diffs <- pairwise.diffs(samp.props)
-## Differences between modalities for each boostrap data set.
-boot.diffs <- apply(boot.props, 2, pairwise.diffs)
-## Bootstrap percentile CIs for each difference.
-diff.cis <- t(apply(boot.diffs, 1, quantile, probs = c(0.025, 0.975)))
-diff.cis
-## Proportion of bootstrapped estimates that are negative.
-boot.diff.neg <- apply(boot.diffs, 1, function(x) mean(x < 0))
-## Proportion of bootstrapped estimates that are equal to zero.
-boot.diff.zero <- apply(boot.diffs, 1, function(x) mean(x == 0))
-## Proportion of bootstrapped estimates that are positive.
-boot.diff.pos <- apply(boot.diffs, 1, function(x) mean(x > 0))
-## The p-value is twice the tail probability equal to or beyond zero,
-## then doubled for a two-tailed test.
-boot.diff.ps <- 2*(1 - apply(cbind(boot.diff.neg, boot.diff.pos), 1, max))
-## Calculation gets it wrong for pcri vs pvf because there is no
-## "tail", given that both vectors are exactly the same.
-boot.diff.ps[boot.diff.ps > 1] <- 1
-boot.diff.ps
+
+mcnemar.mid.p <- function(x){
+    exact.p <- mcnemar.exact.p(x)
+    exact.p - dbinom(min(c(x[1, 2], x[2, 1])), x[1, 2] + x[2, 1], 0.5)
+}
+
+## McNemar tests for each pair of modalities.
+standard.p <- corrected.p <- exact.p <- mid.p <- boot.p <- matrix(NA, n.mods, n.mods)
+rownames(standard.p) <- rownames(corrected.p) <- rownames(exact.p) <- rownames(mid.p) <- rownames(boot.p) <- names(mod.df)
+colnames(standard.p) <- colnames(corrected.p) <- colnames(exact.p) <- colnames(mid.p) <- colnames(boot.p) <- names(mod.df)
+for (i in 1:(n.mods - 1)){
+    for (j in (i + 1):n.mods){
+        ct <- table(mod.df[, i], mod.df[, j])
+        standard.p[i, j] <- mcnemar.test(ct, correct = FALSE)$p.value
+        corrected.p[i, j] <- mcnemar.test(ct, correct = TRUE)$p.value
+        exact.p[i, j] <- mcnemar.exact.p(ct)
+        mid.p[i, j] <- mcnemar.mid.p(ct)
+    }
+}
+
+standard.p
+corrected.p
+exact.p
+mid.p
