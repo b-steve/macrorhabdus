@@ -134,3 +134,9 @@ standard.p
 corrected.p
 exact.p
 mid.p
+
+## Estimates of sensitivity relative to gold standard.
+pos.df <- mod.df[apply(mod.df, 1, function(x) any(x == "positive")), ]
+pos.df <- data.frame(ifelse(pos.df == "positive", 1, 0))
+library(DescTools)
+BinomCI(apply(pos.df, 2, sum), nrow(pos.df), method = "wilson")
