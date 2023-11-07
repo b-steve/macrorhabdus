@@ -1,10 +1,10 @@
 library(TMB)
 ## Sorting out data.
-dwm.df <- as.matrix(read.csv("../modality-comparison/data/mo-dwm.csv", header = FALSE))[, -1]
-ef.df <- as.matrix(read.csv("../modality-comparison/data/mo-ef.csv", header = FALSE))[, -1]
-egs.df <- as.matrix(read.csv("../modality-comparison/data/mo-egs.csv", header = FALSE))[, -1]
-emb.df <- as.matrix(read.csv("../modality-comparison/data/mo-emb.csv", header = FALSE))[, -1]
-gs.df <- as.matrix(read.csv("../modality-comparison/data/mo-gs.csv", header = FALSE))[, -1]
+dwm.df <- as.matrix(read.csv("../clinic-modality-comparison/data/mo-dwm.csv", header = FALSE))[, -1]
+ef.df <- as.matrix(read.csv("../clinic-modality-comparison/data/mo-ef.csv", header = FALSE))[, -1]
+egs.df <- as.matrix(read.csv("../clinic-modality-comparison/data/mo-egs.csv", header = FALSE))[, -1]
+emb.df <- as.matrix(read.csv("../clinic-modality-comparison/data/mo-emb.csv", header = FALSE))[, -1]
+gs.df <- as.matrix(read.csv("../clinic-modality-comparison/data/mo-gs.csv", header = FALSE))[, -1]
 times <- c(0, 3, 4, 7, 9, 10, 34)
 all.times <- seq(0, 34, by = 0.5)
 n.all.times <- length(all.times)
@@ -20,7 +20,7 @@ combined.df[is.na(combined.df)] <- 9999
 infected.birds.et <- combined.df[, 6] > 0
 
 ## Loading in weight data.
-weight.df <- as.matrix(read.csv("../modality-comparison/data/weight.csv", header = FALSE))
+weight.df <- as.matrix(read.csv("../clinic-modality-comparison/data/weight.csv", header = FALSE))
 weight.times <- c(0, 7, 10, 34)
 weight.start <- weight.df[, 1]
 weight.end <- ifelse(is.na(weight.df[, 4]), weight.df[, 3], weight.df[, 4])
